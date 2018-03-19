@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <script src="http://d3js.org/d3.v3.min.js"></script>
+    <script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
+
+    <style>
+        body {
+            text-align: center;
+        }
+
+        h2 {
+            color: black;
+            text-align: center;
+        }
+
+        .axis {
+            font-family: arial;
+            font-size: 1em;
+        }
+
+        path {
+            fill: none;
+            stroke: black;
+            stroke-width: 1px;
+        }
+
+        .tick {
+            font-size: 0.6em;
+        }
+
+        circle {
+            opacity: 0.5;
+            stroke: none;
+        }
+
+        .legend {
+            background-color: #4eb0bb;
+        }
+
+        div.buttons {
+            display: inline-flex;
+        }
+
+        div.buttons div {
+            background-color: rgb(251, 201, 127);
+            padding: 3px;
+            margin: 7px;
+        }
+    </style>
+
+    <script type="text/javascript">
+        function draw(data) {
+
+            // 获取窗口宽度
+            if (window.innerWidth)
+                winWidth = window.innerWidth;
+            else if ((document.body) && (document.body.clientWidth))
+                winWidth = document.body.clientWidth;
+            // 获取窗口高度
+            if (window.innerHeight)
+                winHeight = window.innerHeight;
+            else if ((document.body) && (document.body.clientHeight))
+                winHeight = document.body.clientHeight;
+            console.log("winWidth: " + winWidth);
+            console.log("winHeight: " + winHeight);
+
+            "use strict";
+            var margin = 50,
+                width = winWidth - margin,
+                height = winHeight - margin - 120;
+
+            var radius = 4;
+
+            var svg = d3.select(".gragh")
+                .append("svg")
+                .attr("width", width + margin)
+                .attr("height", height + margin)
+                .append('g')
+                .attr('class', 'chart');
+
+            var x_extent = d3.extent(data, function (d) {
+                return d['height'];
+            });
+            var y_extent = d3.extent(data, function (d) {
+                return d['HR'];
+            });
+            console.log(y_extent);
+
+            y_extent = ["0", "600"]
+            //debugger
+
+            var x_scale = d3.scale.linear()
+                .range([margin, width])
+                .domain(x_extent);
+
+            var y_scale = d3.scale.linear()
+                .range([height, margin])
+                .domain(y_extent);
+
+            var x_axis = d3.svg.axis()
+                .scale(x_scale)
+                .orient('bottom')
+                .ticks(14)
+
+            var y_axis = d3.svg.axis()
+                .scale(y_scale)
+                .orient("left");
+
+            var x_axis_elem = svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(x_axis);
+
+            var y_axis_elem = svg.append("g")
+                .attr("class", "y axis")
+                .attr("transform", "translate(" + margin + ",0)")
+                .call(y_axis);
+
+            var x_axis_text = x_axis_elem.append('text')
+                          .attr('class','x_axis_text')
+                          .text('height')
+                          .attr('x', winWidth/2)
+                          .attr('y', 20)
+                          .attr('dy','1em')      
+            var y_axis_text = y_axis_elem.append('text')
+                          .text('HR')
+                          .attr('x',0)
+                          .attr('y',0)
+                          .attr('dy','1em')
+
+            function color_handedness(val) {
+                switch (val) {
+                    case 'L': return 'red';
+                    case 'R': return 'green';
+                    default: return 'black';
+                }
+            }
+
+            function cx_handedness_HT(d) {
+                handedness = d["handedness"];
+                    r = 0.2*Math.random() + 0.1;
+                    if (handedness === 'L')
+                        return x_scale(+d['height'] - r);
+                    else if (handedness === 'R')
+                        return x_scale(+d['height'] + r);
+                    else return x_scale(+d['height']);
+            }
+
+            var circle_groups = svg.selectAll(".circle")
+                .data(data)
+                .enter()
+                // .append('g')
+                // .attr('class','circle')
+            var circles = circle_groups.append('circle')
+                .attr("cx", cx_handedness_HT)
+                .attr("cy", function (d) {
+                    return y_scale(d["HR"]);
+                })
+                .attr("r", radius)
+                .attr("fill", function (d) {
+                    return color_handedness(d["handedness"]);
+                })
+
+            function update_axis(keyword_x, keyword_y) {
+                x_extent = d3.extent(data, function (d) {
+                    return d[keyword_x];
+                });
+                y_extent = d3.extent(data, function (d) {
+                    return d[keyword_y];
+                })
+                if (keyword_y === 'HR')
+                    y_extent = [" 0", "600"];
+                x_scale = d3.scale.linear()
+                    .range([margin, width])
+                    .domain(x_extent);
+                y_scale = d3.scale.linear()
+                    .range([height, margin])
+                    .domain(y_extent);
+                x_axis = d3.svg.axis()
+                    .scale(x_scale)
+                    .orient("bottom")
+                    .ticks(14);
+                y_axis = d3.svg.axis()
+                    .scale(y_scale)
+                    .orient('left');
+
+                x_axis_elem.transition()
+                    .duration(500)
+                    .call(x_axis);
+                y_axis_elem.transition()
+                    .duration(500)
+                    .call(y_axis)
+                x_axis_text.transition()
+                  .duration(500)
+                  .text(keyword_x);
+                y_axis_text.transition()
+                  .duration(500)
+                  .text(keyword_y);
+            }
+            function update_circle(keyword_x, keyword_y) {
+                circles.transition()
+                    .duration(500)
+                    .attr("cx", function (d) {
+                        if (keyword_x === "height")
+                            return cx_handedness_HT(d);
+                        else 
+                            return x_scale(d[keyword_x]);
+                    })
+                    .attr("cy", function (d) {
+                        return y_scale(d[keyword_y]);
+                    });
+            }
+
+            function update(keyword_x, keyword_y) {
+                update_axis(keyword_x, keyword_y);
+                update_circle(keyword_x, keyword_y);
+            }
+
+            //categroy
+            var catatory =
+                [{ "btn_text": "身高:击球率", "content_1": "height", 'content_2': 'avg' },
+                { "btn_text": "体重:击球率", "content_1": "weight", 'content_2': 'avg' },
+                { "btn_text": "身高:全垒得分", "content_1": "height", 'content_2': 'HR' },
+                { "btn_text": "Weight:全垒得分", "content_1": "weight", 'content_2': 'HR' }];
+
+            var buttons = d3.select(".buttons")
+                .selectAll("div")
+                .data(catatory)   //定义了按钮，且按钮的值来自于catatory这个中间
+                .enter()
+                .append("div")
+                .attr('width', '30px')
+                .attr('height', '5px')
+                .text(function (d) {
+                    return d["btn_text"];
+                })
+
+            buttons.on("click", function (d) {   // 这段代码的意思是click之后对.bpttoms下的div进行改动的颜色会发生变化等
+                d3.select(".buttons")
+                    .selectAll("div")
+                    .transition()
+                    .duration(500)
+                    .style("color", "black")
+                    .style("background", "rgb(251, 201, 127)");
+
+                d3.select(this)         //这段的意思对于选中的这个对象
+                    .transition()
+                    .duration(500)
+                    .style("background", "lightBlue")    //
+                    .style("color", "white");
+                console.log("update to (" + d["content_1"] + "," + d['content_2'] + ")");
+                update(d["content_1"], d['content_2']);
+            });
+
+            var legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", "translate(" + (width - 100) + "," + 20 + ")")
+                .selectAll("g")
+                .data(["L", "R", "Both"])
+                .enter().append("g");
+
+            legend.append("circle")
+                .attr("cy", function (d, i) {
+                    return i * 20;
+                })
+                .attr("r", function (d) {
+                    return radius;
+                })
+                .attr("fill", function (d) {
+                    return color_handedness(d);
+                });
+
+            legend.append("text")
+                .attr("y", function (d, i) {
+                    return i * 20 + 5;
+                })
+                .attr("x", radius * 5)
+                .text(function (d) {
+                    return d;
+                });
+
+        };
+    </script>
+</head>
+
+<body>
+    <script type="text/javascript">
+        d3.csv("baseball_data.csv", draw);
+    </script>
+    <h2>棒球队员投球分析图</h2>
+    <div class="buttons" ></div>
+    <div class="gragh" ></div>
+</body>
+
+</html>
