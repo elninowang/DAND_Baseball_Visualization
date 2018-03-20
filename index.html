@@ -5,7 +5,6 @@
     <meta charset="utf-8">
     <script src="http://d3js.org/d3.v3.min.js"></script>
     <script src="http://dimplejs.org/dist/dimple.v2.0.0.min.js"></script>
-
     <style>
         body {
             text-align: center;
@@ -74,6 +73,7 @@
 
             var radius = 4;
 
+            // 获得graph元素，是专门用来绘图的
             var svg = d3.select(".gragh")
                 .append("svg")
                 .attr("width", width + margin)
@@ -87,38 +87,37 @@
             var y_extent = d3.extent(data, function (d) {
                 return d['HR'];
             });
-            console.log(y_extent);
-
+            // 不知道为什么，读取的HR范围 是["0","99"]，而HR的最大值有528, 暂时人工修正
             y_extent = ["0", "600"]
-            //debugger
 
+            // 设置x坐标和y坐标为线性变换
             var x_scale = d3.scale.linear()
                 .range([margin, width])
                 .domain(x_extent);
-
             var y_scale = d3.scale.linear()
                 .range([height, margin])
                 .domain(y_extent);
 
+            // 设置x轴和y轴的位置
             var x_axis = d3.svg.axis()
                 .scale(x_scale)
                 .orient('bottom')
                 .ticks(14)
-
             var y_axis = d3.svg.axis()
                 .scale(y_scale)
                 .orient("left");
 
+            // 绘制X轴和y轴的位置
             var x_axis_elem = svg.append("g")
                 .attr("class", "x axis")
                 .attr("transform", "translate(0," + height + ")")
                 .call(x_axis);
-
             var y_axis_elem = svg.append("g")
                 .attr("class", "y axis")
                 .attr("transform", "translate(" + margin + ",0)")
                 .call(y_axis);
 
+            // 绘制x轴和y轴的描述
             var x_axis_text = x_axis_elem.append('text')
                           .attr('class','x_axis_text')
                           .text('height')
@@ -131,6 +130,7 @@
                           .attr('y',0)
                           .attr('dy','1em')
 
+            // 给左手，右手，双手习惯，选择颜色
             function color_handedness(val) {
                 switch (val) {
                     case 'L': return 'red';
@@ -138,7 +138,8 @@
                     default: return 'black';
                 }
             }
-
+            
+            // 设置在显示HT的时候，左手习惯，右手习惯，双手习惯 在绘制图的时候，不重叠，这样便于观察
             function cx_handedness_HT(d) {
                 handedness = d["handedness"];
                     r = 0.2*Math.random() + 0.1;
@@ -149,11 +150,10 @@
                     else return x_scale(+d['height']);
             }
 
+            // 绘制需要显示的数据
             var circle_groups = svg.selectAll(".circle")
                 .data(data)
                 .enter()
-                // .append('g')
-                // .attr('class','circle')
             var circles = circle_groups.append('circle')
                 .attr("cx", cx_handedness_HT)
                 .attr("cy", function (d) {
@@ -164,6 +164,11 @@
                     return color_handedness(d["handedness"]);
                 })
 
+            /*****************************************************************************
+             * 下面是绘制 操作动画
+             *****************************************************************************/
+            
+            // 变换轴线
             function update_axis(keyword_x, keyword_y) {
                 x_extent = d3.extent(data, function (d) {
                     return d[keyword_x];
@@ -200,6 +205,7 @@
                   .duration(500)
                   .text(keyword_y);
             }
+            // 变化需要显示的数据
             function update_circle(keyword_x, keyword_y) {
                 circles.transition()
                     .duration(500)
@@ -219,13 +225,14 @@
                 update_circle(keyword_x, keyword_y);
             }
 
-            //categroy
+            // 需要变换的按钮数据选项
             var catatory =
                 [{ "btn_text": "身高:击球率", "content_1": "height", 'content_2': 'avg' },
                 { "btn_text": "体重:击球率", "content_1": "weight", 'content_2': 'avg' },
                 { "btn_text": "身高:全垒得分", "content_1": "height", 'content_2': 'HR' },
-                { "btn_text": "Weight:全垒得分", "content_1": "weight", 'content_2': 'HR' }];
+                { "btn_text": "体重:全垒得分", "content_1": "weight", 'content_2': 'HR' }];
 
+            // 绑定显示按钮
             var buttons = d3.select(".buttons")
                 .selectAll("div")
                 .data(catatory)   //定义了按钮，且按钮的值来自于catatory这个中间
@@ -237,6 +244,7 @@
                     return d["btn_text"];
                 })
 
+            // 按 按钮 的的时候，执行的操作
             buttons.on("click", function (d) {   // 这段代码的意思是click之后对.bpttoms下的div进行改动的颜色会发生变化等
                 d3.select(".buttons")
                     .selectAll("div")
@@ -251,8 +259,13 @@
                     .style("background", "lightBlue")    //
                     .style("color", "white");
                 console.log("update to (" + d["content_1"] + "," + d['content_2'] + ")");
+                // 更新显示的数据
                 update(d["content_1"], d['content_2']);
             });
+
+            /*****************************************************************************
+             * 显示左右手标记
+             *****************************************************************************/
 
             var legend = svg.append("g")
                 .attr("class", "legend")
