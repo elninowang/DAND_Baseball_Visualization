@@ -82,13 +82,11 @@
                 .attr('class', 'chart');
 
             var x_extent = d3.extent(data, function (d) {
-                return d['height'];
+                return +d['height'];
             });
             var y_extent = d3.extent(data, function (d) {
-                return d['HR'];
+                return +d['HR'];
             });
-            // 不知道为什么，读取的HR范围 是["0","99"]，而HR的最大值有528, 暂时人工修正
-            y_extent = ["0", "600"]
 
             // 设置x坐标和y坐标为线性变换
             var x_scale = d3.scale.linear()
@@ -161,8 +159,6 @@
                     else return x_scale(+d['height']);
             }
 
-            
-
             // 绘制需要显示的数据
             var circle_groups = svg.selectAll(".circle")
                 .data(data)
@@ -184,10 +180,10 @@
             // 变换轴线
             function update_axis(keyword_x, keyword_y) {
                 x_extent = d3.extent(data, function (d) {
-                    return d[keyword_x];
+                    return +d[keyword_x];
                 });
                 y_extent = d3.extent(data, function (d) {
-                    return d[keyword_y];
+                    return +d[keyword_y];
                 })
                 if (keyword_y === 'HR')
                     y_extent = [" 0", "600"];
